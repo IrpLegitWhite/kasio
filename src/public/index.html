@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kasio — Case Battle</title>
+<style>
+  :root {
+    --kasio-bg: #0b0e14;
+    --kasio-panel: #131824;
+    --kasio-accent: #7c5cff;
+    --kasio-accent-2: #22d3ee;
+    --kasio-text: #e6e9f2;
+    --kasio-muted: #8b93a7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: radial-gradient(1200px 600px at 50% -10%, #1a1030 0%, var(--kasio-bg) 60%);
+    color: var(--kasio-text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 24px;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px;
+  }
+  .logo {
+    font-size: 30px; font-weight: 800; letter-spacing: -0.5px;
+    background: linear-gradient(90deg, var(--kasio-accent), var(--kasio-accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .badge {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--kasio-muted); border: 1px solid #2a3142;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .panel {
+    background: var(--kasio-panel);
+    border: 1px solid #1f2635;
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 720px;
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  input {
+    background: #0e131d; border: 1px solid #2a3142; color: var(--kasio-text);
+    padding: 10px 14px; border-radius: 10px; outline: none; flex: 1; min-width: 160px;
+  }
+  input:focus { border-color: var(--kasio-accent); }
+  button {
+    background: linear-gradient(90deg, var(--kasio-accent), var(--kasio-accent-2));
+    color: #0b0e14; font-weight: 700; border: 0;
+    padding: 10px 20px; border-radius: 10px; cursor: pointer;
+  }
+  button:disabled { background: #2a3142; color: var(--kasio-muted); cursor: not-allowed; }
+  .stat { color: var(--kasio-muted); margin-bottom: 14px; }
+  .stat b { color: var(--kasio-text); }
+  #log {
+    background: #070a0f; border: 1px solid #1f2635; border-radius: 12px;
+    padding: 12px; height: 280px; overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  }
+  #log div { margin-bottom: 4px; color: var(--kasio-muted); }
+</style>
+</head>
+<body>
+  <header>
+    <span class="logo">Kasio</span>
+    <span class="badge">Case Battle · MVP</span>
+  </header>
+
+  <div class="panel">
+    <div class="row">
+      <input id="name" placeholder="Твой ник" value="player1" />
+      <button id="join">Зайти в лобби</button>
+      <button id="spin" disabled>Крутить кейс</button>
+    </div>
+    <div class="stat">Игроков в лобби: <b id="count">0</b></div>
+    <div id="log"></div>
+  </div>
+
+<script>
+let ws = null;
+const log = (msg) => {
+  const el = document.getElementById('log');
+  el.innerHTML += `<div>> ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+};
+
+document.getElementById('join').onclick = () => {
+  if (ws && ws.readyState === WebSocket.OPEN) return;
+  const name = document.getElementById('name').value || 'anon';
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws?lobby=room1`);
+
+  ws.onopen = () => {
+    log('connected to Kasio');
+    ws.send(JSON.stringify({ type: 'join', name }));
+    document.getElementById('spin').disabled = false;
+  };
+
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    log(JSON.stringify(data));
+    if (data.type === 'players') {
+      document.getElementById('count').textContent = data.count;
+    }
+  };
+
+  ws.onclose = () => log('disconnected');
+};
+
+document.getElementById('spin').onclick = () => {
+  const name = document.getElementById('name').value || 'anon';
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'spin', name }));
+  }
+};
+</script>
+</body>
+</html>
